@@ -1,7 +1,10 @@
 "use client";
 import { useMutation } from "@tanstack/react-query";
 import { useState, type SubmitEvent } from "react";
-import { ToastContainer, toast } from "react-toastify";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { toast } from "react-toastify";
+import { API_URL } from "@/lib/api";
 
 export default function Register() {
   // Put your logic here, remember this is a function :D
@@ -11,10 +14,11 @@ export default function Register() {
   const [errorUsername, setUsernameError] = useState<string | null>(null);
   const [errorEmail, setEmailError] = useState<string | null>(null);
   const [errorPassword, setPasswordError] = useState<string | null>(null);
+  const router = useRouter();
 
   const registerMutation = useMutation({
     mutationFn: async (user: { username: string; email: string; password: string }) => {
-      const res = await fetch("http://localhost:4000/auth/register", {
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(user),
@@ -24,10 +28,11 @@ export default function Register() {
       return data;
     },
     onSuccess: () => {
-      toast.success("Sign up successful!", { theme: "colored" });
+      toast.success("Sign up successful! Please log in.", { theme: "colored" });
       setUsername("");
       setEmail("");
       setPassword("");
+      router.push("/login"); // next stop: log in with the new account
     },
     onError: (error) => {
       if (error instanceof TypeError) {
@@ -90,9 +95,8 @@ export default function Register() {
   }
 
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="flex flex-1 items-center justify-center py-10">
       <div className="mx-3 w-full max-w-[400px] rounded-[10px] p-5 text-black shadow-[0px_15px_35px_rgba(0,0,0,0.26)]">
-        <ToastContainer theme="colored" />
         <h1 className="mb-3 text-[30px] font-[600]">Sign Up</h1>
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <div className="flex flex-col">
@@ -152,6 +156,12 @@ export default function Register() {
               {registerMutation.isPending ? "Signing up..." : "Submit"}
             </button>
           </div>
+          <p className="text-center text-sm text-zinc-600">
+            Already have an account?{" "}
+            <Link href="/login" className="font-semibold text-blue-500">
+              Log in
+            </Link>
+          </p>
         </form>
       </div>
     </div>

@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Messenger AI
 
-## Getting Started
+A full-stack messaging app where users chat one-on-one with each other and with **Sparky**, a built-in AI assistant powered by Claude.
 
-First, run the development server:
+This repo is the **frontend** (Next.js). The API lives in a separate **backend** repo (NestJS + MySQL).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Features
+
+- **Accounts**: sign up and log in. Passwords are hashed with bcrypt, and sessions use JWT tokens.
+- **Profiles**: set a display name and a bio.
+- **Messaging**: one-on-one chats between users, a chat list sorted by the latest message, and live updates through polling.
+- **AI assistant**: Sparky shows up as a contact. With an Anthropic API key it answers with Claude. Without one it runs a simple built-in mode (greetings, jokes, dice, a coin flip and a calculator).
+- Validation on both sides: the form checks before sending, and the API checks again.
+- Responsive: on phones the chat list and the conversation switch places.
+
+## Tech stack
+
+| Layer | Tools |
+|---|---|
+| Frontend (this repo) | Next.js 16 (App Router), React 19, TypeScript, TanStack Query, Tailwind CSS 4, react-toastify |
+| Backend | NestJS 12, Prisma 7 (MariaDB driver adapter), MySQL, class-validator, JWT, bcrypt, Anthropic SDK |
+
+## How it fits together
+
+```
+Browser (Next.js :3000) ──fetch + JWT──▶ NestJS API (:4000) ──Prisma──▶ MySQL
+                                              │
+                                              └──▶ Claude API (Sparky's replies)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- `lib/api.ts`: a single `api()` helper that adds the token, parses JSON, and turns errors into toast-ready messages.
+- `lib/auth.tsx`: an auth context that restores the session from a saved token on page load.
+- `app/chat`: the contact list and a conversation view. TanStack Query refreshes messages every few seconds.
+- `app/profile`: view and edit your profile.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run it locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Start the backend first (see its README). It runs on `http://localhost:4000`.
+2. Then run this repo:
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open http://localhost:3000, register two accounts (use a private window for the second one), and message each other or Sparky.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+If the API runs somewhere else, set `NEXT_PUBLIC_API_URL` in `.env.local`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Notes
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- The login token is stored in `localStorage` to keep things simple. A production app would use an httpOnly cookie.
+- Messages arrive by polling, not WebSockets. That's enough for a small app, and it's the first thing I'd upgrade.

@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Messenger App",
-  description: "Messenger App with AI ",
+  title: "Messenger AI",
+  description: "Chat with friends and an AI assistant",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
