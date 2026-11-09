@@ -1,0 +1,25 @@
+# dependencies and build output
+/node_modules
+/dist
+/coverage
+*.tsbuildinfo
+
+# logs
+*.log
+npm-debug.log*
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+
+# secrets: never commit these
+.env*
+!.env.example
+secrets/
+*.key
+*.pem
+.credentials.json
+credentials*.json
+
+
+/src/generated/prisma
