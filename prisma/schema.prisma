@@ -155,3 +155,11 @@ model PendingChange {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// Uploaded files kept IN the database (FILE_STORAGE=database), for hosts whose disk is wiped on restart.
+// The bytes are encrypted exactly like files on disk.
+model StoredFile {
+  name      String   @id @db.VarChar(64) // the same random name the message/user row points to
+  data      Bytes    @db.LongBlob
+  createdAt DateTime @default(now())
+}

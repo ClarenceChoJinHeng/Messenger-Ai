@@ -23,6 +23,12 @@ export function getSecret(name: SecretName): string {
   const fromEnv = process.env[name];
   if (fromEnv) return fromEnv;
 
+  // Online, a made-up key would vanish on the next restart: everyone logged out, and every
+  // encrypted message unreadable forever. So in production, refuse to start instead.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(`${name} must be set in the host's environment settings (it is missing).`);
+  }
+
   const keys = loadDevKeys();
   if (!keys[name]) {
     keys[name] = randomBytes(32).toString('base64'); // 32 random bytes = a 256-bit key

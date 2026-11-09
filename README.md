@@ -81,6 +81,10 @@ npm run start:dev             # http://localhost:4000
 | `FRONTEND_URL` | optional | CORS origin, default `http://localhost:3000` |
 | `PORT` | optional | Default `4000` |
 
+## Deploying
+
+Free hosting with Aiven (MySQL) + Render (this API, via `render.yaml`) + Vercel (frontend): see **[DEPLOY.md](DEPLOY.md)**.
+
 ## Tests
 
 ```bash
