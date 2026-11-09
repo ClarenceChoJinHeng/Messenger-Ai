@@ -1,0 +1,165 @@
+// The blueprint for the database. `npx prisma migrate dev` builds the tables from it,
+// `npx prisma generate` builds the TypeScript client (src/generated/prisma).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique
+  email        String    @unique
+  password     String // bcrypt hash, never the real password
+  displayName  String? // optional name shown in chats
+  bio          String?   @db.VarChar(280)
+  theme        String    @default("grey") // "grey" (light) or "black" (dark)
+  isBot        Boolean   @default(false) // true for the AI assistant account
+  tokenVersion Int       @default(0) // +1 = every existing login token stops working
+  statusMode   String    @default("auto") // "auto", "online", "away" or "offline" (appear offline)
+  lastSeenAt   DateTime? // when they were last connected (shown as "last seen ...")
+  avatarFile   String? // profile photo: random file name in uploads/ (encrypted on disk)
+  avatarMime   String?
+  avatarKey    String? // changes with every new photo, so browsers don't show an old cached one
+  aiMemoryFrom DateTime? // Sparky only remembers messages after this ("New conversation" sets it)
+  createdAt    DateTime  @default(now())
+
+  sentMessages     Message[]          @relation("SentMessages")
+  receivedMessages Message[]          @relation("ReceivedMessages")
+  pendingChanges   PendingChange[]
+  contacts         Contact[]          @relation("ContactsOwned") // people I added
+  contactOf        Contact[]          @relation("ContactOf") // people who added me
+  notifications    Notification[]
+  blocking         Block[]            @relation("Blocker") // people I blocked
+  blockedBy        Block[]            @relation("Blocked") // people who blocked me
+  reactions        Reaction[]
+  dismissed        DismissedRequest[] @relation("DismissedBy")
+  dismissedOf      DismissedRequest[] @relation("DismissedFrom")
+}
+
+// The bell tray: one row per notification. New messages from the same person are grouped
+// into one unread row ("3 new messages") instead of piling up.
+model Notification {
+  id        Int       @id @default(autoincrement())
+  userId    Int // who sees it
+  type      String // "message", "contact" or "security"
+  actorId   Int? // who caused it (the sender, the person who added you)
+  title     String    @db.VarChar(120)
+  body      String    @db.Text // ENCRYPTED: it can contain a message preview
+  link      String?   @db.VarChar(200) // where clicking it goes, e.g. /chat?with=5
+  count     Int       @default(1)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, updatedAt])
+}
+
+// "ownerId added contactId to their chat list" (one row per person added, a bridge table)
+model Contact {
+  id        Int      @id @default(autoincrement())
+  ownerId   Int
+  contactId Int
+  createdAt DateTime @default(now())
+
+  owner   User @relation("ContactsOwned", fields: [ownerId], references: [id], onDelete: Cascade)
+  contact User @relation("ContactOf", fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, contactId]) // you can't add the same person twice
+}
+
+// "blockerId blocked blockedId": no messages, typing or status between them
+model Block {
+  id        Int      @id @default(autoincrement())
+  blockerId Int
+  blockedId Int
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+}
+
+// A message request I deleted. It comes back only if they send something newer.
+model DismissedRequest {
+  id          Int      @id @default(autoincrement())
+  userId      Int // me
+  fromId      Int // the stranger whose request I deleted
+  dismissedAt DateTime @default(now())
+
+  user User @relation("DismissedBy", fields: [userId], references: [id], onDelete: Cascade)
+  from User @relation("DismissedFrom", fields: [fromId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fromId])
+}
+
+// One row per chat message. A conversation is every message between two users.
+model Message {
+  id         Int       @id @default(autoincrement())
+  content    String    @db.Text // ENCRYPTED text (AES-256-GCM), never plain
+  senderId   Int // foreign key → User.id (who sent it)
+  receiverId Int // foreign key → User.id (who it was sent to)
+  readAt     DateTime? // null = the receiver hasn't opened it yet
+  editedAt   DateTime? // set when the sender edits the text
+  deletedAt  DateTime? // set when the sender unsends it ("This message was deleted")
+  replyToId  Int? // the message this one answers (shown as a quote)
+  createdAt  DateTime  @default(now())
+
+  // Optional photo / video / voice note. The file itself is encrypted on disk in uploads/.
+  attachmentFile String? // random file name in uploads/ (never shown to users)
+  attachmentMime String? // e.g. image/png, video/mp4, audio/webm (checked from the bytes)
+  attachmentSize Int?
+
+  sender    User       @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver  User       @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  replyTo   Message?   @relation("Replies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   Message[]  @relation("Replies")
+  reactions Reaction[]
+
+  @@index([senderId, receiverId, createdAt])
+  @@index([receiverId, senderId, createdAt])
+  @@index([receiverId, readAt])
+}
+
+// One emoji reaction per person per message (picking another emoji replaces it)
+model Reaction {
+  id        Int      @id @default(autoincrement())
+  messageId Int
+  userId    Int
+  emoji     String   @db.VarChar(16)
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+// An email or password change waiting for the user to click the link in their email
+model PendingChange {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String // "email" or "password"
+  tokenHash String   @unique // SHA-256 of the emailed token (the token itself is never stored)
+  newValue  String // the new email, or the bcrypt hash of the new password
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Uploaded files kept IN the database (FILE_STORAGE=database), for hosts whose disk is wiped on restart.
+// The bytes are encrypted exactly like files on disk.
+model StoredFile {
+  name      String   @id @db.VarChar(64) // the same random name the message/user row points to
+  data      Bytes    @db.LongBlob
+  createdAt DateTime @default(now())
+}
