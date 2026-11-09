@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { API_URL } from "@/lib/api";
+import PasswordInput from "@/app/components/PasswordInput";
 
 export default function Register() {
   // Put your logic here, remember this is a function :D
@@ -96,13 +97,13 @@ export default function Register() {
 
   return (
     <div className="flex flex-1 items-center justify-center py-10">
-      <div className="mx-3 w-full max-w-[400px] rounded-[10px] p-5 text-black shadow-[0px_15px_35px_rgba(0,0,0,0.26)]">
+      <div className="mx-3 w-full max-w-[400px] rounded-[10px] bg-surface p-5 text-ink shadow-[0px_15px_35px_rgba(0,0,0,0.26)]">
         <h1 className="mb-3 text-[30px] font-[600]">Sign Up</h1>
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <div className="flex flex-col">
             <label htmlFor="username">Username</label>
             <input
-              className="rounded-[5px] border-[1px] border-black px-2 py-2"
+              className="rounded-[5px] border-[1px] border-line bg-field px-2 py-2"
               type="text"
               placeholder="Username"
               id="username"
@@ -118,7 +119,7 @@ export default function Register() {
           <div className="flex flex-col">
             <label htmlFor="email">Email:</label>
             <input
-              className="rounded-[5px] border-[1px] border-black px-2 py-2"
+              className="rounded-[5px] border-[1px] border-line bg-field px-2 py-2"
               type="email"
               placeholder="Email"
               id="email"
@@ -132,9 +133,7 @@ export default function Register() {
 
           <div className="flex flex-col">
             <label htmlFor="password">Password</label>
-            <input
-              className="rounded-[5px] border-[1px] border-black px-2 py-2"
-              type="password"
+            <PasswordInput
               placeholder="Password"
               id="password"
               name="password"
@@ -151,12 +150,12 @@ export default function Register() {
             <button
               type="submit"
               disabled={registerMutation.isPending}
-              className="rounded-[8px] bg-black px-3 py-2 font-[600] text-white hover:cursor-pointer"
+              className="rounded-[8px] bg-accent px-3 py-2 font-[600] text-accent-ink hover:cursor-pointer disabled:opacity-60"
             >
               {registerMutation.isPending ? "Signing up..." : "Submit"}
             </button>
           </div>
-          <p className="text-center text-sm text-zinc-600">
+          <p className="text-center text-sm text-muted">
             Already have an account?{" "}
             <Link href="/login" className="font-semibold text-blue-500">
               Log in

@@ -19,12 +19,20 @@ export const metadata: Metadata = {
   description: "Chat with friends and an AI assistant",
 };
 
+// Runs before the page paints: applies the last theme used on this device, so there's no white flash
+const themeScript = `try{var t=localStorage.getItem("messenger-ai-theme");if(t==="black")document.documentElement.dataset.theme="black"}catch(e){}`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // suppressHydrationWarning: the theme script may add data-theme before React loads
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full bg-white antialiased`}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="flex min-h-full flex-col">
         <Providers>
           <Navbar />

@@ -6,9 +6,16 @@ This repo is the **frontend** (Next.js). The API lives in a separate **backend**
 
 ## Features
 
-- **Accounts**: sign up and log in. Passwords are hashed with bcrypt, and sessions use JWT tokens.
-- **Profiles**: set a display name and a bio.
-- **Messaging**: one-on-one chats between users, a chat list sorted by the latest message, and live updates through polling.
+- **Accounts**: sign up and log in (with a show/hide password button). Passwords are hashed with bcrypt, and sessions use JWT tokens.
+- **Profiles**: username, display name, bio, and a **Grey** (light) or **Black** (dark) theme.
+- **Email-confirmed changes**: changing your email or password sends a confirmation link. A password change logs you out everywhere.
+- **Messaging**: one-on-one chats with **emojis**, **photos and videos**, unread badges, "Seen" receipts, and live updates through polling.
+- **Real time** (Socket.IO): messages, "Seen" receipts, **typing…** indicators and status changes arrive instantly.
+- **Status**: online / away / offline dots and "last seen". Set it yourself or leave it on Automatic (away after 5 minutes idle).
+- **Camera**: take a photo or record a video right in the chat.
+- **Notifications, WhatsApp-style**: a sound, green unread badges, desktop notifications when the window isn't in front, and a 🔔 tray.
+- **Collapsible chat list** and a message box that grows as you type.
+- **Encrypted storage**: messages and files are encrypted in the database and on disk (AES-256-GCM).
 - **AI assistant**: Sparky shows up as a contact. With an Anthropic API key it answers with Claude. Without one it runs a simple built-in mode (greetings, jokes, dice, a coin flip and a calculator).
 - Validation on both sides: the form checks before sending, and the API checks again.
 - Responsive: on phones the chat list and the conversation switch places.

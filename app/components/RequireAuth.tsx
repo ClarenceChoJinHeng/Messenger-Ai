@@ -15,7 +15,7 @@ export default function RequireAuth({ children }: { children: (user: User) => Re
   }, [ready, user, router]);
 
   if (!ready || !user) {
-    return <p className="flex flex-1 items-center justify-center text-zinc-500">Loading…</p>;
+    return <p className="flex flex-1 items-center justify-center text-muted">Loading…</p>;
   }
   return <>{children(user)}</>;
 }

@@ -1,26 +1,73 @@
 @import "tailwindcss";
 
+/* Two themes, picked on the profile page and saved to the account.
+   Components use these names (bg-surface, text-ink, ...) instead of fixed colours,
+   so switching the theme only changes the variables below. */
+
+/* White: the light theme (default). Saved as "grey" in the database. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --page: #ffffff; /* page background */
+  --surface: #ffffff; /* cards, sidebar, navbar */
+  --surface-2: #f4f4f5; /* hover / selected rows */
+  --field: #ffffff; /* inputs */
+  --ink: #09090b; /* main text */
+  --muted: #71717a; /* secondary text */
+  --line: #d4d4d8; /* borders */
+  --accent: #18181b; /* main buttons */
+  --accent-ink: #ffffff; /* text on main buttons */
+  --bubble-me: #27272a; /* my chat bubbles */
+  --bubble-me-ink: #ffffff;
+  --bubble-them: #ffffff;
+  --bubble-them-ink: #09090b;
+  color-scheme: light;
 }
 
+/* Dark: the dark theme. Saved as "black" in the database. */
+:root[data-theme="black"] {
+  --page: #000000;
+  --surface: #0f0f11;
+  --surface-2: #1d1d21;
+  --field: #18181b;
+  --ink: #fafafa;
+  --muted: #a1a1aa;
+  --line: #2e2e33;
+  --accent: #fafafa;
+  --accent-ink: #09090b;
+  --bubble-me: #3f3f46;
+  --bubble-me-ink: #fafafa;
+  --bubble-them: #1d1d21;
+  --bubble-them-ink: #fafafa;
+  color-scheme: dark;
+}
+
+/* Turn the variables into Tailwind classes: bg-page, bg-surface, text-ink, border-line, ... */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-field: var(--field);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-bubble-me: var(--bubble-me);
+  --color-bubble-me-ink: var(--bubble-me-ink);
+  --color-bubble-them: var(--bubble-them);
+  --color-bubble-them-ink: var(--bubble-them-ink);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
-body {
-  background: white;
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Dark-themed toasts in the black theme */
+:root[data-theme="black"] .Toastify__toast--default,
+:root[data-theme="black"] .Toastify__toast--info {
+  background: var(--surface-2);
+  color: var(--ink);
 }
