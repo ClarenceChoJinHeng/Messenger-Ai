@@ -57,6 +57,11 @@ Open http://localhost:3000, register two accounts (use a private window for the 
 
 If the API runs somewhere else, set `NEXT_PUBLIC_API_URL` in `.env.local`.
 
+## Deploying
+
+The site runs on **Vercel** (production branch `release/prod`) with one setting: `NEXT_PUBLIC_API_URL` = the backend's address.
+The full free setup (database, API, site) is in the backend repo's `DEPLOY.md`.
+
 ## Notes
 
 - The login token is stored in `localStorage` to keep things simple. A production app would use an httpOnly cookie.
