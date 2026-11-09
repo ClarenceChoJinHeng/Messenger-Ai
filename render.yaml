@@ -15,7 +15,7 @@ services:
     healthCheckPath: /
     envVars:
       - key: NODE_VERSION
-        value: "22"
+        value: "24" # Node 24 comes with npm 11, which matches package-lock.json (Node 22's npm 10 rejects it)
       - key: NODE_ENV
         value: production # also makes the app refuse to start without real secrets
       - key: FILE_STORAGE
