@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 
 // The columns anyone may see. `select` = "only bring back these", so the password never leaves the DB.
 export const PUBLIC_USER = {
@@ -14,32 +15,43 @@ export const PUBLIC_USER = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtime: RealtimeService,
+  ) {}
 
   async findMe(id: number) {
     const user = await this.prisma.user.findUnique({
       where: { id },
-      select: { ...PUBLIC_USER, email: true }, // my own email is fine to show to me
+      select: { ...PUBLIC_USER, email: true, theme: true, statusMode: true }, // my own email + theme are fine to show to me
     });
     if (!user) throw new NotFoundException('User not found.');
     return user;
   }
 
-  updateMe(id: number, body: UpdateProfileDto) {
-    return this.prisma.user.update({
-      where: { id },
-      // empty text → null, so "no display name" is stored as nothing
-      data: { displayName: body.displayName?.trim() || null, bio: body.bio?.trim() || null },
-      select: { ...PUBLIC_USER, email: true },
-    });
-  }
+  async updateMe(id: number, body: UpdateProfileDto) {
+    // New username? Make sure nobody else has it → 409 Conflict
+    if (body.username !== undefined) {
+      const taken = await this.prisma.user.findFirst({
+        where: { username: body.username, id: { not: id } },
+      });
+      if (taken) throw new ConflictException('That username is already taken!');
+    }
 
-  listOthers(myId: number) {
-    return this.prisma.user.findMany({
-      where: { id: { not: myId } },
-      select: PUBLIC_USER,
-      orderBy: [{ isBot: 'desc' }, { username: 'asc' }], // the AI on top, then A→Z
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: {
+        username: body.username, // undefined = leave it unchanged
+        // empty text → null, so "no display name" is stored as nothing
+        displayName: body.displayName === undefined ? undefined : body.displayName.trim() || null,
+        bio: body.bio === undefined ? undefined : body.bio.trim() || null,
+        theme: body.theme, // "grey" or "black" (the DTO allows nothing else)
+        statusMode: body.statusMode, // "auto", "online", "away" or "offline"
+      },
+      select: { ...PUBLIC_USER, email: true, theme: true, statusMode: true },
     });
+    if (body.statusMode) await this.realtime.setMode(id, body.statusMode); // people see the new status live
+    return user;
   }
 
   async findPublic(username: string) {

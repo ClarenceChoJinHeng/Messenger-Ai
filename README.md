@@ -15,12 +15,24 @@ NestJS 12 (ESM) · Prisma 7 with the MariaDB driver adapter · MySQL · class-va
 | POST | `/auth/register` | – | Create an account. Duplicate username/email → 409 |
 | POST | `/auth/login` | – | Log in with username **or** email → `{ accessToken, user }` |
 | GET | `/users/me` | ✓ | My profile |
-| PATCH | `/users/me` | ✓ | Update display name / bio |
-| GET | `/users` | ✓ | Everyone I can chat with (Sparky first) |
+| PATCH | `/users/me` | ✓ | Update username / display name / bio / theme |
+| POST | `/account/email` | ✓ | Ask to change email: a confirmation link goes to the new address |
+| POST | `/account/password` | ✓ | Ask to change password: a confirmation link goes to your email |
+| POST | `/account/confirm` | – | The link's token confirms the change. A password change logs out every device |
+| GET | `/contacts` | ✓ | My chat list: Sparky, people I added, and anyone who messaged me |
+| POST | `/contacts` | ✓ | Add someone by their exact username (there's no public list of users) |
+| DELETE | `/contacts/:userId` | ✓ | Remove someone from my list (messages stay) |
 | GET | `/users/:username` | ✓ | Someone's public profile |
-| GET | `/messages/conversations` | ✓ | My chats, newest first, with the last message |
-| GET | `/messages/:userId` | ✓ | Messages between me and a user |
-| POST | `/messages/:userId` | ✓ | Send a message. If it's to Sparky, the reply comes back in the same response |
+| GET | `/messages/conversations` | ✓ | My chats, newest first, with the last message and unread count |
+| GET | `/messages/:userId` | ✓ | Messages between me and a user (marks theirs as read) |
+| POST | `/messages/:userId` | ✓ | Send text and/or a photo/video (multipart, field `file`, max 25 MB). Sparky replies in the same response |
+| GET | `/messages/attachment/:messageId` | ✓ | A photo/video, decrypted, only for the two people in that chat |
+
+| GET | `/notifications` | ✓ | The bell tray: `{ unread, items }` (messages grouped per sender) |
+| POST | `/notifications/read-all` · `/notifications/:id/read` | ✓ | Mark as read |
+
+**WebSocket** (Socket.IO, same port, `auth: { token }`; the token is checked during the handshake):
+server → client `message`, `read`, `typing`, `presence`, `notifications`; client → server `typing { to, typing }`, `activity { state: active | idle }`.
 
 Protected routes expect `Authorization: Bearer <token>`. No route ever returns a password, because every query selects only public columns.
 
@@ -55,7 +67,9 @@ npm run start:dev             # http://localhost:4000
 | Name | Required | What it's for |
 |---|---|---|
 | `DATABASE_URL` | yes | `mysql://USER:PASSWORD@localhost:3306/messenger_ai` |
-| `JWT_SECRET` | recommended | Signs login tokens. Without it a temporary one is used, and everyone is logged out on restart |
+| `JWT_SECRET` | recommended | Signs login tokens. Without it a development key is created in `secrets/` (git-ignored) |
+| `MESSAGE_ENCRYPTION_KEY` | recommended | Encrypts messages and files. Without it a development key is created in `secrets/` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | optional | Sends confirmation emails. Without them, emails are printed in the terminal |
 | `ANTHROPIC_API_KEY` | optional | Lets Sparky answer with Claude. Without it Sparky uses simple mode |
 | `FRONTEND_URL` | optional | CORS origin, default `http://localhost:3000` |
 | `PORT` | optional | Default `4000` |
@@ -65,6 +79,15 @@ npm run start:dev             # http://localhost:4000
 ```bash
 npm test        # unit tests (Sparky's commands + calculator, auth controller)
 ```
+
+## Security
+
+- **Encryption at rest**: message text and uploaded files are encrypted with AES-256-GCM (random IV per item, plus an auth tag, so tampering is detected). A copy of the database or the `uploads/` folder is unreadable without the key. This is not end-to-end encryption: the server can decrypt, which Sparky needs in order to reply.
+- **Uploads**: the file type is detected from the bytes (not the name or the browser's claim), only photos/videos are allowed, files get random names, and they're only served to the two people in the chat.
+- **Sessions**: JWTs carry a `tokenVersion`. Changing the password bumps it, so every existing login stops working.
+- **Email/password changes** need the current password and a link from an email. Only a SHA-256 hash of the link's token is stored. Links expire after 1 hour and work once.
+- **Rate limiting** (`@nestjs/throttler`): 10/min for login and sign-up, 5/min for account changes, 300/min overall.
+- **Headers**: `helmet` (nosniff, frame protection, ...). CORS allows only the frontend's origin.
 
 ## Design notes
 

@@ -22,13 +22,7 @@ export class UsersController {
     return this.usersService.updateMe(user.sub, body);
   }
 
-  // GET /users → everyone I can chat with (the AI first)
-  @Get()
-  list(@CurrentUser() user: JwtUser) {
-    return this.usersService.listOthers(user.sub);
-  }
-
-  // GET /users/:username → someone's public profile
+  // GET /users/:username → someone's public profile (exact username only: there's no list of everyone)
   @Get(':username')
   byUsername(@Param('username') username: string) {
     return this.usersService.findPublic(username);

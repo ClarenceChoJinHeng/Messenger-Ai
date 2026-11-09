@@ -1,10 +1,13 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 
 // The waiter for /auth/...: takes the order (body) and passes it to the chef (AuthService)
 @Controller('auth')
+// At most 10 tries a minute per IP, so nobody can guess passwords at full speed
+@Throttle({ default: { limit: 10, ttl: 60_000 } })
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

@@ -23,3 +23,6 @@ credentials*.json
 
 
 /src/generated/prisma
+
+# uploaded files (encrypted)
+/uploads

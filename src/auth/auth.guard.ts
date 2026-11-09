@@ -1,17 +1,18 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { verifyAccessToken, type JwtUser } from './verify-token.js';
 
-// What we put inside each login token
-export interface JwtUser {
-  sub: number; // the user's id
-  username: string;
-}
+export type { JwtUser } from './verify-token.js';
 
 // The bouncer: routes marked @UseGuards(AuthGuard) only let in requests with a valid token
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly jwt: JwtService) {}
+  constructor(
+    private readonly jwt: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request & { user?: JwtUser }>();
@@ -22,12 +23,10 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Please log in first.');
     }
 
-    try {
-      // Checks the signature and the expiry date, then remembers who this is
-      request.user = await this.jwt.verifyAsync<JwtUser>(token);
-    } catch {
-      throw new UnauthorizedException('Your session expired. Please log in again.');
-    }
+    const user = await verifyAccessToken(this.jwt, this.prisma, token);
+    if (!user) throw new UnauthorizedException('Your session expired. Please log in again.');
+
+    request.user = user;
     return true;
   }
 }

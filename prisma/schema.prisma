@@ -11,30 +11,92 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  username    String   @unique
-  email       String   @unique
-  password    String // bcrypt hash, never the real password
-  displayName String? // optional name shown in chats
-  bio         String?  @db.VarChar(280)
-  isBot       Boolean  @default(false) // true for the AI assistant account
-  createdAt   DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  email        String   @unique
+  password     String // bcrypt hash, never the real password
+  displayName  String? // optional name shown in chats
+  bio          String?  @db.VarChar(280)
+  theme        String   @default("grey") // "grey" (light) or "black" (dark)
+  isBot        Boolean  @default(false) // true for the AI assistant account
+  tokenVersion Int       @default(0) // +1 = every existing login token stops working
+  statusMode   String    @default("auto") // "auto", "online", "away" or "offline" (appear offline)
+  lastSeenAt   DateTime? // when they were last connected (shown as "last seen ...")
+  createdAt    DateTime  @default(now())
 
-  sentMessages     Message[] @relation("SentMessages")
-  receivedMessages Message[] @relation("ReceivedMessages")
+  sentMessages     Message[]       @relation("SentMessages")
+  receivedMessages Message[]       @relation("ReceivedMessages")
+  pendingChanges   PendingChange[]
+  contacts         Contact[]       @relation("ContactsOwned") // people I added
+  contactOf        Contact[]       @relation("ContactOf") // people who added me
+  notifications    Notification[]
+}
+
+// The bell tray: one row per notification. New messages from the same person are grouped
+// into one unread row ("3 new messages") instead of piling up.
+model Notification {
+  id        Int       @id @default(autoincrement())
+  userId    Int // who sees it
+  type      String // "message", "contact" or "security"
+  actorId   Int? // who caused it (the sender, the person who added you)
+  title     String    @db.VarChar(120)
+  body      String    @db.Text // ENCRYPTED: it can contain a message preview
+  link      String?   @db.VarChar(200) // where clicking it goes, e.g. /chat?with=5
+  count     Int       @default(1)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, updatedAt])
+}
+
+// "ownerId added contactId to their chat list" (one row per person added, a bridge table)
+model Contact {
+  id        Int      @id @default(autoincrement())
+  ownerId   Int
+  contactId Int
+  createdAt DateTime @default(now())
+
+  owner   User @relation("ContactsOwned", fields: [ownerId], references: [id], onDelete: Cascade)
+  contact User @relation("ContactOf", fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, contactId]) // you can't add the same person twice
 }
 
 // One row per chat message. A conversation is every message between two users.
 model Message {
-  id         Int      @id @default(autoincrement())
-  content    String   @db.Text
+  id         Int       @id @default(autoincrement())
+  content    String    @db.Text // ENCRYPTED text (AES-256-GCM), never plain
   senderId   Int // foreign key → User.id (who sent it)
   receiverId Int // foreign key → User.id (who it was sent to)
-  createdAt  DateTime @default(now())
+  readAt     DateTime? // null = the receiver hasn't opened it yet
+  createdAt  DateTime  @default(now())
+
+  // Optional image/video. The file itself is encrypted on disk in uploads/.
+  attachmentFile String? // random file name in uploads/ (never shown to users)
+  attachmentMime String? // e.g. image/png, video/mp4 (detected from the bytes, not trusted from the browser)
+  attachmentSize Int?
 
   sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@index([senderId, receiverId, createdAt])
   @@index([receiverId, senderId, createdAt])
+  @@index([receiverId, readAt])
+}
+
+// An email or password change waiting for the user to click the link in their email
+model PendingChange {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String // "email" or "password"
+  tokenHash String   @unique // SHA-256 of the emailed token (the token itself is never stored)
+  newValue  String // the new email, or the bcrypt hash of the new password
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

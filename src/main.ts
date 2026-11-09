@@ -1,10 +1,15 @@
 import 'dotenv/config'; // line 1: copy .env into process.env before anything else loads
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
 import { AppModule } from './app.module.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Security headers (no MIME sniffing, no framing, strict referrer, ...).
+  // cross-origin: lets the frontend on :3000 load attachments from this API.
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
   // Only the Next.js frontend may call this API from a browser
   app.enableCors({ origin: process.env.FRONTEND_URL ?? 'http://localhost:3000' });

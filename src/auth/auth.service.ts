@@ -51,8 +51,9 @@ export class AuthService {
       throw new UnauthorizedException('Wrong username/email or password.');
     }
 
-    // The token is the user's "wristband": the frontend sends it with every request
-    const accessToken = await this.jwt.signAsync({ sub: user.id, username: user.username });
+    // The token is the user's "wristband": the frontend sends it with every request.
+    // v = tokenVersion: changing the password bumps it, which cancels every older token.
+    const accessToken = await this.jwt.signAsync({ sub: user.id, v: user.tokenVersion });
 
     return {
       accessToken,
