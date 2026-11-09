@@ -23,6 +23,13 @@ export class ContactsController {
     return this.contactsService.add(user.sub, body.username);
   }
 
+  // POST /contacts/requests/:userId/dismiss → delete a message request (it comes back only if they write again)
+  @Post('requests/:userId/dismiss')
+  @HttpCode(204)
+  dismiss(@CurrentUser() user: JwtUser, @Param('userId', ParseIntPipe) userId: number) {
+    return this.contactsService.dismissRequest(user.sub, userId);
+  }
+
   // DELETE /contacts/:userId → remove from my list (the messages stay)
   @Delete(':userId')
   @HttpCode(204) // 204 No Content: done, nothing to send back

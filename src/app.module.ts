@@ -9,6 +9,7 @@ import { CryptoModule } from './crypto/crypto.module.js';
 import { MailModule } from './mail/mail.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { NotificationsModule } from './notifications/notifications.module.js';
+import { SocialModule } from './social/social.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { AccountModule } from './account/account.module.js';
 import { UsersModule } from './users/users.module.js';
@@ -27,6 +28,7 @@ import { AiModule } from './ai/ai.module.js';
     MailModule,
     RealtimeModule,
     NotificationsModule,
+    SocialModule,
     AuthModule,
     AccountModule,
     UsersModule,

@@ -28,6 +28,13 @@ NestJS 12 (ESM) · Prisma 7 with the MariaDB driver adapter · MySQL · class-va
 | POST | `/messages/:userId` | ✓ | Send text and/or a photo/video (multipart, field `file`, max 25 MB). Sparky replies in the same response |
 | GET | `/messages/attachment/:messageId` | ✓ | A photo/video, decrypted, only for the two people in that chat |
 
+| PATCH | `/messages/item/:id` | ✓ | Edit my message's text (within 15 minutes) |
+| DELETE | `/messages/item/:id` | ✓ | Unsend my message (file erased, shows "deleted") |
+| PUT | `/messages/item/:id/reaction` | ✓ | React `{ emoji }` (same again removes it) |
+| POST | `/contacts/requests/:userId/dismiss` | ✓ | Delete a message request (comes back if they write again) |
+| GET · POST · DELETE | `/blocks` · `/blocks/:userId` | ✓ | List / block / unblock |
+| POST · DELETE | `/users/me/avatar` | ✓ | Upload (max 5 MB) / remove my profile photo |
+| GET | `/users/:id/avatar` | ✓ | Someone's profile photo (decrypted) |
 | GET | `/notifications` | ✓ | The bell tray: `{ unread, items }` (messages grouped per sender) |
 | POST | `/notifications/read-all` · `/notifications/:id/read` | ✓ | Mark as read |
 

@@ -102,11 +102,12 @@ export class RealtimeService {
   }
 
   async audienceOf(userId: number): Promise<number[]> {
-    const [addedMe, iAdded, sentTo, receivedFrom] = await Promise.all([
+    const [addedMe, iAdded, sentTo, receivedFrom, blocks] = await Promise.all([
       this.prisma.contact.findMany({ where: { contactId: userId }, select: { ownerId: true } }),
       this.prisma.contact.findMany({ where: { ownerId: userId }, select: { contactId: true } }),
       this.prisma.message.groupBy({ by: ['receiverId'], where: { senderId: userId } }),
       this.prisma.message.groupBy({ by: ['senderId'], where: { receiverId: userId } }),
+      this.prisma.block.findMany({ where: { OR: [{ blockerId: userId }, { blockedId: userId }] } }),
     ]);
     const ids = new Set([
       ...addedMe.map((c) => c.ownerId),
@@ -115,6 +116,7 @@ export class RealtimeService {
       ...receivedFrom.map((m) => m.senderId),
     ]);
     ids.delete(userId);
+    for (const b of blocks) ids.delete(b.blockerId === userId ? b.blockedId : b.blockerId); // a block hides your status
     return [...ids].filter((id) => this.sockets.has(id)); // only people who are connected right now
   }
 }

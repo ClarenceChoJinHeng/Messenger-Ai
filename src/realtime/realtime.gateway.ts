@@ -12,6 +12,7 @@ import type { Server, Socket } from 'socket.io';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { verifyAccessToken } from '../auth/verify-token.js';
 import { RealtimeService } from './realtime.service.js';
+import { RelationsService } from '../social/relations.service.js';
 
 // The WebSocket door. Browsers connect here (same port as the API) with their login token,
 // then get pushed messages, "typing…", status changes and notifications instantly.
@@ -21,6 +22,7 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     private readonly realtime: RealtimeService,
     private readonly jwt: JwtService,
     private readonly prisma: PrismaService,
+    private readonly relations: RelationsService,
   ) {}
 
   afterInit(server: Server) {
@@ -61,9 +63,10 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
   // "I'm typing to user X" / "I stopped": passed straight on to X's open tabs
   @SubscribeMessage('typing')
-  typing(@ConnectedSocket() client: Socket, @MessageBody() body: { to?: unknown; typing?: unknown }) {
+  async typing(@ConnectedSocket() client: Socket, @MessageBody() body: { to?: unknown; typing?: unknown }) {
     const from = client.data.userId as number | undefined;
     if (!from || !Number.isInteger(body?.to) || body.to === from) return;
+    if (await this.relations.blockedEitherWay(from, body.to as number)) return; // nothing passes a block
     this.realtime.emitToUser(body.to as number, 'typing', { from, typing: body.typing === true });
   }
 }

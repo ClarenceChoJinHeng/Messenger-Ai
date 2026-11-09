@@ -7,7 +7,8 @@ const JOKES = [
   'There are 10 kinds of people: those who understand binary and those who don\'t.',
 ];
 
-const HELP = `I'm in simple mode right now. Try:
+const HELP = `My creator is broke right now, that is why I can't get access to a better software to make replies 😅
+So I'm in simple mode. Try:
 • "hi"
 • "time" or "date"
 • "joke"
