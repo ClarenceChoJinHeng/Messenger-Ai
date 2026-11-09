@@ -1,10 +1,10 @@
 -- AlterTable
-ALTER TABLE `message` ADD COLUMN `deletedAt` DATETIME(3) NULL,
+ALTER TABLE `Message` ADD COLUMN `deletedAt` DATETIME(3) NULL,
     ADD COLUMN `editedAt` DATETIME(3) NULL,
     ADD COLUMN `replyToId` INTEGER NULL;
 
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `avatarFile` VARCHAR(191) NULL,
+ALTER TABLE `User` ADD COLUMN `avatarFile` VARCHAR(191) NULL,
     ADD COLUMN `avatarKey` VARCHAR(191) NULL,
     ADD COLUMN `avatarMime` VARCHAR(191) NULL;
 
