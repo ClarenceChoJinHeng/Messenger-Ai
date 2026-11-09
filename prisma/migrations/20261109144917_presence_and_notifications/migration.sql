@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `lastSeenAt` DATETIME(3) NULL,
+ALTER TABLE `User` ADD COLUMN `lastSeenAt` DATETIME(3) NULL,
     ADD COLUMN `statusMode` VARCHAR(191) NOT NULL DEFAULT 'auto';
 
 -- CreateTable

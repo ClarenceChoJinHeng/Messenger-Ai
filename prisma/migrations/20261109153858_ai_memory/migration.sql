@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `aiMemoryFrom` DATETIME(3) NULL;
+ALTER TABLE `User` ADD COLUMN `aiMemoryFrom` DATETIME(3) NULL;

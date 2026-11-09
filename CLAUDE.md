@@ -42,6 +42,11 @@ Each one is a real mistake made in this project.
 
 **Prisma 7**
 - `migrate dev` does NOT run `generate` in Prisma 7. Always run both after a schema change.
+- Laragon MySQL on Windows is case-INsensitive and reports tables lowercase, so `migrate dev` can write
+  `ALTER TABLE \`user\`` for model `User`. Linux MySQL (hosting) is case-sensitive → deploy failed
+  ("Table 'defaultdb.user' doesn't exist"). `src/migrations-case.spec.ts` now fails on this: run `npm test`
+  after every `migrate dev`. If a fix edits an applied migration, update its checksum in the local
+  `_prisma_migrations` (sha256 of the file) instead of resetting.
 - Before deleting/renaming migrations, the database still has the old ones: expect drift → `migrate reset` (dev only).
 
 **Uploads / files**

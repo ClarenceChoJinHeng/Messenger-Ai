@@ -1,11 +1,11 @@
 -- AlterTable
-ALTER TABLE `message` ADD COLUMN `attachmentFile` VARCHAR(191) NULL,
+ALTER TABLE `Message` ADD COLUMN `attachmentFile` VARCHAR(191) NULL,
     ADD COLUMN `attachmentMime` VARCHAR(191) NULL,
     ADD COLUMN `attachmentSize` INTEGER NULL,
     ADD COLUMN `readAt` DATETIME(3) NULL;
 
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `theme` VARCHAR(191) NOT NULL DEFAULT 'grey',
+ALTER TABLE `User` ADD COLUMN `theme` VARCHAR(191) NOT NULL DEFAULT 'grey',
     ADD COLUMN `tokenVersion` INTEGER NOT NULL DEFAULT 0;
 
 -- CreateTable
