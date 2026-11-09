@@ -11,6 +11,7 @@ interface RealtimeState {
   connected: boolean; // false = live connection down (the app falls back to checking every few seconds)
   presence: Record<number, PresenceInfo>; // latest live status per user id
   typing: Record<number, boolean>; // who is typing to me right now
+  aiStream: Record<number, string | null>; // Sparky's reply being written ("" = thinking, null = not replying)
   sendTyping: (to: number, typing: boolean) => void;
 }
 
@@ -49,6 +50,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const [connected, setConnected] = useState(false);
   const [presence, setPresence] = useState<Record<number, PresenceInfo>>({});
   const [typing, setTyping] = useState<Record<number, boolean>>({});
+  const [aiStream, setAiStream] = useState<Record<number, string | null>>({});
   const myId = user?.id;
 
   // WhatsApp-style alert: nothing if you're looking at that chat, otherwise a sound,
@@ -95,9 +97,37 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       if (m.senderId !== myId) {
         setTyping((t) => ({ ...t, [m.senderId]: false })); // they sent it, so they stopped typing
         queryClient.invalidateQueries({ queryKey: ["contacts"] }); // a new person may have messaged
-        alertNewMessage(m);
+        if (!m.isRequest) alertNewMessage(m); // message requests are silent: only the Requests counter changes
       }
     });
+    // Someone reacted to my message: a sound, and a desktop notification when I'm not looking at that chat
+    socket.on("reaction", (r: { from: number; name: string; emoji: string; preview: string }) => {
+      if (document.hasFocus() && activeChat.id === r.from) return; // I can see it happen in the open chat
+      playPop();
+      if (document.hasFocus() || !("Notification" in window) || Notification.permission !== "granted") return;
+      const n = new Notification(`${r.name} reacted ${r.emoji}`, { body: `to: ${r.preview}`, tag: `reaction-${r.from}` });
+      n.onclick = () => {
+        window.focus();
+        router.push(`/chat?with=${r.from}`);
+        n.close();
+      };
+    });
+    // A message was edited, unsent or reacted to: swap it in place in the open chat
+    socket.on("message:updated", (m: Message) => {
+      const partnerId = m.senderId === myId ? m.receiverId : m.senderId;
+      queryClient.setQueryData<Message[]>(["thread", partnerId], (old) => old?.map((x) => (x.id === m.id ? m : x)));
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    });
+    // My chat list changed (someone blocked/unblocked me, changed their name or photo, a request was handled)
+    socket.on("contacts", () => {
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["blocks"] });
+    });
+    // Sparky writing its answer: the text so far, then "done" once the real message is saved
+    socket.on("ai:stream", ({ botId, text, done }: { botId: number; text?: string; done?: boolean }) =>
+      setAiStream((s) => ({ ...s, [botId]: done ? null : (text ?? "") })),
+    );
     socket.on("read", ({ by }: { by: number }) => queryClient.invalidateQueries({ queryKey: ["thread", by] }));
     socket.on("notifications", () => queryClient.invalidateQueries({ queryKey: ["notifications"] }));
     socket.on("presence", (p: { userId: number } & PresenceInfo) =>
@@ -114,7 +144,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [myId, queryClient, alertNewMessage]);
+  }, [myId, queryClient, alertNewMessage, router]);
 
   // "Auto" status: tell the server whether this tab is being used (active) or not (idle)
   useEffect(() => {
@@ -150,7 +180,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <RealtimeContext.Provider value={{ connected, presence, typing, sendTyping }}>{children}</RealtimeContext.Provider>
+    <RealtimeContext.Provider value={{ connected, presence, typing, aiStream, sendTyping }}>{children}</RealtimeContext.Provider>
   );
 }
 

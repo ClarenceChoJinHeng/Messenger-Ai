@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { useRealtime } from "@/lib/realtime";
 import Dropdown from "./Dropdown";
 import PresenceDot from "./PresenceDot";
+import UserAvatar from "./UserAvatar";
 
 const STATUS_OPTIONS: { value: StatusMode; label: string; hint: string; dot: Presence }[] = [
   { value: "auto", label: "Automatic", hint: "Online while you're active, away after 5 min idle", dot: "online" },
@@ -36,9 +37,8 @@ export default function ProfileMenu({ me }: { me: User }) {
     <Dropdown
       label={`Your account (${nameOf(me)})`}
       button={
-        <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-accent text-lg font-semibold text-accent-ink hover:opacity-80">
-          {nameOf(me).charAt(0).toUpperCase()}
-          <PresenceDot status={shown} />
+        <span className="hover:opacity-80">
+          <UserAvatar user={me} textSize="text-lg" status={shown} />
         </span>
       }
     >

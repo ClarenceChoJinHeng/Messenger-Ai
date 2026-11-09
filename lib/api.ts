@@ -89,7 +89,7 @@ export interface PresenceInfo {
 
 export interface AppNotification {
   id: number;
-  type: "message" | "contact" | "security";
+  type: "message" | "contact" | "security" | "reaction";
   actorId: number | null;
   title: string;
   body: string;
@@ -108,6 +108,8 @@ export interface User {
   bio: string | null;
   isBot: boolean;
   isContact?: boolean; // in my chat list: false = they messaged me but I haven't added them
+  isRequest?: boolean; // in my chat list: a stranger's message waiting in Requests
+  avatarKey: string | null; // null = no profile photo; changes when the photo changes
   presence?: PresenceInfo; // in my chat list: online / away / offline + last seen
   statusMode?: StatusMode; // only on your own profile
   createdAt: string;
@@ -132,19 +134,35 @@ export interface Message {
   senderId: number;
   receiverId: number;
   readAt: string | null;
+  editedAt: string | null;
+  deletedAt: string | null; // unsent: shows as "This message was deleted"
   createdAt: string;
   attachment: { mime: string; size: number } | null;
+  reactions: { emoji: string; userId: number }[];
+  replyTo: { id: number; senderId: number; preview: string } | null;
+  isRequest?: boolean; // only on live "message" events: it landed in my Requests
 }
 
 export interface Conversation {
   user: User;
   lastMessage: Message;
   unreadCount: number;
+  isRequest: boolean;
 }
+
+// The quick reactions (the backend accepts only these)
+export const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", "🎉"];
+
+// What kind of file: "photo", "video" or "voice"
+export const kindOf = (mime: string) => (mime.startsWith("video") ? "video" : mime.startsWith("audio") ? "voice" : "photo");
 
 // "Sparky (AI)" if there's a display name, otherwise the username
 export const nameOf = (u: Pick<User, "displayName" | "username">) => u.displayName || u.username;
 
 // What to show in a chat list preview for a message
-export const previewOf = (m: Message) =>
-  m.content || (m.attachment ? (m.attachment.mime.startsWith("video") ? "🎬 Video" : "📷 Photo") : "");
+export const previewOf = (m: Message) => {
+  if (m.deletedAt) return "🚫 Message deleted";
+  if (m.content) return m.content;
+  if (!m.attachment) return "";
+  return { photo: "📷 Photo", video: "🎬 Video", voice: "🎤 Voice message" }[kindOf(m.attachment.mime)];
+};

@@ -15,6 +15,9 @@ This repo is the **frontend** (Next.js). The API lives in a separate **backend**
 - **Camera**: take a photo or record a video right in the chat.
 - **Notifications, WhatsApp-style**: a sound, green unread badges, desktop notifications when the window isn't in front, and a 🔔 tray.
 - **Collapsible chat list** and a message box that grows as you type.
+- **Reply, edit, unsend** and **reactions** (👍 ❤️ 😂 …) on any message.
+- **Voice notes** and **profile photos** (both encrypted like everything else).
+- **Message requests**: strangers land in a Requests tab (accept, delete or block). **Block** stops messages, typing and status both ways.
 - **Encrypted storage**: messages and files are encrypted in the database and on disk (AES-256-GCM).
 - **AI assistant**: Sparky shows up as a contact. With an Anthropic API key it answers with Claude. Without one it runs a simple built-in mode (greetings, jokes, dice, a coin flip and a calculator).
 - Validation on both sides: the form checks before sending, and the API checks again.

@@ -5,7 +5,7 @@ import { api, type AppNotification } from "@/lib/api";
 import { useRealtime } from "@/lib/realtime";
 import Dropdown from "./Dropdown";
 
-const ICONS: Record<AppNotification["type"], string> = { message: "💬", contact: "👤", security: "🔒" };
+const ICONS: Record<AppNotification["type"], string> = { message: "💬", contact: "👤", security: "🔒", reaction: "😊" };
 
 // "5 min ago", "2 h ago", "3 d ago"
 function ago(iso: string) {

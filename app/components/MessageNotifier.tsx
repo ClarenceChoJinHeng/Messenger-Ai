@@ -25,7 +25,8 @@ export default function MessageNotifier() {
       document.title = "Messenger AI";
       return;
     }
-    const unread = conversations.data.reduce((sum, c) => sum + (activeChat.id === c.user.id ? 0 : c.unreadCount), 0);
+    // (message requests don't count: they wait quietly in the Requests tab)
+    const unread = conversations.data.reduce((sum, c) => sum + (activeChat.id === c.user.id || c.isRequest ? 0 : c.unreadCount), 0);
     document.title = unread > 0 ? `(${unread}) Messenger AI` : "Messenger AI";
   }, [conversations.data, user]);
 

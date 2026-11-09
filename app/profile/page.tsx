@@ -1,10 +1,11 @@
 "use client";
-import { useState, type SubmitEvent } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useRef, useState, type ChangeEvent, type SubmitEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import RequireAuth from "@/app/components/RequireAuth";
 import PasswordInput from "@/app/components/PasswordInput";
+import UserAvatar from "@/app/components/UserAvatar";
 import { api, ApiError, nameOf, type Theme, type User } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
@@ -42,9 +43,7 @@ function Profile({ me }: { me: User }) {
 
         {/* Profile card */}
         <div className="flex items-center gap-4 rounded-[10px] bg-surface p-5 shadow-[0px_15px_35px_rgba(0,0,0,0.12)]">
-          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent text-2xl font-semibold text-accent-ink">
-            {nameOf(me).charAt(0).toUpperCase()}
-          </span>
+          <PhotoPicker me={me} />
           <div className="min-w-0">
             <h1 className="truncate text-2xl font-semibold">{nameOf(me)}</h1>
             <p className="truncate text-muted">@{me.username}</p>
@@ -56,6 +55,7 @@ function Profile({ me }: { me: User }) {
         <ThemePicker me={me} />
         <EmailForm me={me} />
         <PasswordForm />
+        <BlockedPeople />
       </div>
     </div>
   );
@@ -260,5 +260,105 @@ function PasswordForm() {
         {request.isPending ? "Sending..." : "Send confirmation link"}
       </button>
     </form>
+  );
+}
+
+// The profile photo: click it to upload a new one; "Remove" goes back to the letter
+function PhotoPicker({ me }: { me: User }) {
+  const { setUser } = useAuth();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const upload = useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData();
+      form.append("file", file);
+      return api<User>("/users/me/avatar", { method: "POST", body: form });
+    },
+    onSuccess: (updated) => {
+      setUser(updated);
+      toast.success("Profile photo updated!");
+    },
+    onError: showErrors,
+  });
+  const remove = useMutation({
+    mutationFn: () => api<User>("/users/me/avatar", { method: "DELETE" }),
+    onSuccess: (updated) => setUser(updated),
+    onError: showErrors,
+  });
+
+  function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return void toast.error("Pick a photo (JPG, PNG, GIF or WebP).");
+    if (file.size > 5 * 1024 * 1024) return void toast.error("That photo is too big. The limit is 5 MB.");
+    upload.mutate(file);
+  }
+
+  return (
+    <div className="flex shrink-0 flex-col items-center gap-1">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={upload.isPending}
+        className="group relative rounded-full hover:cursor-pointer"
+        aria-label="Change profile photo"
+      >
+        <UserAvatar user={me} size="h-16 w-16" textSize="text-2xl" />
+        <span className="absolute inset-0 hidden items-center justify-center rounded-full bg-black/50 text-xs font-semibold text-white group-hover:flex">
+          {upload.isPending ? "…" : "Change"}
+        </span>
+      </button>
+      {me.avatarKey && (
+        <button type="button" onClick={() => remove.mutate()} className="text-xs text-muted hover:cursor-pointer hover:text-red-500">
+          Remove
+        </button>
+      )}
+      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleFile} className="hidden" />
+    </div>
+  );
+}
+
+// People you blocked, with an Unblock button
+function BlockedPeople() {
+  const queryClient = useQueryClient();
+  const blocked = useQuery({ queryKey: ["blocks"], queryFn: () => api<User[]>("/blocks") });
+  const unblock = useMutation({
+    mutationFn: (id: number) => api(`/blocks/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast.success("Unblocked.");
+      queryClient.invalidateQueries({ queryKey: ["blocks"] });
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+    },
+    onError: showErrors,
+  });
+
+  return (
+    <section className={card} aria-labelledby="blocked-title">
+      <div>
+        <h2 id="blocked-title" className="text-xl font-semibold">Blocked people</h2>
+        <p className="text-sm text-muted">They can&apos;t message you, see your status, or find you by username.</p>
+      </div>
+      {blocked.data?.length === 0 && <p className="text-sm text-muted">You haven&apos;t blocked anyone.</p>}
+      <ul className="flex flex-col gap-2">
+        {blocked.data?.map((u) => (
+          <li key={u.id} className="flex items-center gap-3">
+            <UserAvatar user={u} size="h-9 w-9" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-semibold">{nameOf(u)}</span>
+              <span className="block truncate text-sm text-muted">@{u.username}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => unblock.mutate(u.id)}
+              disabled={unblock.isPending}
+              className="rounded-[8px] border border-line px-3 py-1 text-sm font-semibold hover:cursor-pointer hover:bg-surface-2"
+            >
+              Unblock
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
