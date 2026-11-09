@@ -1,25 +1,23 @@
-import { Controller, Post, Body } from '@nestjs/common';
-import { RegisterDto } from './dto/register.dto.js';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { AuthService } from './auth.service.js';
+import { RegisterDto } from './dto/register.dto.js';
+import { LoginDto } from './dto/login.dto.js';
 
-// @Controller('auth')
-// export class AuthController {
-//   // @Post is a decorator from nestjs/common
-//   constructor(private readonly authService: AuthService) {}
-//   @Post('register')
-//   register(@Body() body: RegisterDto) {
-//     console.log(body);
-//     return this.authService.register(body);
-//   }
-// }
-
+// The waiter for /auth/...: takes the order (body) and passes it to the chef (AuthService)
 @Controller('auth')
 export class AuthController {
-  // Constructor is used to pass an object, so now we can take the service object and return it to the frontend
-  constructor(private readonly authService: AuthService) {} 
+  constructor(private readonly authService: AuthService) {}
+
+  // POST /auth/register → 201 { id, username, email }
   @Post('register')
   register(@Body() body: RegisterDto) {
-    console.log(body);
-    return this.authService.register(body); // <-- Passing the value of the http body request into the serviec method
+    return this.authService.register(body);
+  }
+
+  // POST /auth/login → 200 { accessToken, user }
+  @Post('login')
+  @HttpCode(200) // logging in doesn't create anything, so 200 instead of 201
+  login(@Body() body: LoginDto) {
+    return this.authService.login(body);
   }
 }

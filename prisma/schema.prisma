@@ -1,7 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// The blueprint for the database. `npx prisma migrate dev` builds the tables from it,
+// `npx prisma generate` builds the TypeScript client (src/generated/prisma).
 
 generator client {
   provider = "prisma-client"
@@ -13,9 +11,30 @@ datasource db {
 }
 
 model User {
-id Int @id @default(autoincrement())
-username String @unique
-email String @unique
-password String 
-createdAt DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  username    String   @unique
+  email       String   @unique
+  password    String // bcrypt hash, never the real password
+  displayName String? // optional name shown in chats
+  bio         String?  @db.VarChar(280)
+  isBot       Boolean  @default(false) // true for the AI assistant account
+  createdAt   DateTime @default(now())
+
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+}
+
+// One row per chat message. A conversation is every message between two users.
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String   @db.Text
+  senderId   Int // foreign key → User.id (who sent it)
+  receiverId Int // foreign key → User.id (who it was sent to)
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId, createdAt])
+  @@index([receiverId, senderId, createdAt])
 }
