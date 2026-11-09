@@ -7,9 +7,20 @@ Project notes, rules and learning progress live in Obsidian:
   asked Claude to build (`task/003-portfolio-mvp` and later feature tasks). Learning happens on `task/002-prisma-mysql`.
 - Every task: `specs/NNN-name.md` → branch `task/NNN-name` from `release/prod` →
   `release/staging` → `release/prod`. Commit only when Clarence asks, and scan for secrets first.
+- **No Claude attribution in commits**: never add `Co-Authored-By: Claude` (Clarence removed it from all history).
 - Never read `.env*`, `secrets/` or other secrets. Use the app's own code to work with them.
 - Runs on port 4000 (`npm run start:dev`). The frontend repo is `../messenger-ai` (port 3000).
 - MySQL comes from Laragon (MySQL 8.0.30). Laragon → Start All before the backend.
+
+## Publishing (GitHub + hosting)
+
+- Public repo: https://github.com/ClarenceChoJinHeng/Messenger-Ai (account ClarenceChoJinHeng; the old
+  ChoJinHeng/messenger-ai remote is NOT writable from this PC). It's a monorepo: `frontend/` + `backend/`,
+  built in `E:/laragon/www/Projects/Personal/Messenger-Ai` with both histories (subtree merge).
+- Work still happens in these two repos. To publish `release/prod` (only when Clarence asks to push):
+  `cd ../../Messenger-Ai && git fetch ../messenger-ai-app/messenger-ai release/prod && git merge -X subtree=frontend FETCH_HEAD`
+  then the same with `../messenger-ai-app/backend` and `-X subtree=backend`, then `git push`.
+- Hosting: Aiven (MySQL) + Render (`render.yaml`, rootDir backend) + Vercel (root dir frontend). See DEPLOY.md there.
 
 ## Lessons learned — don't repeat these
 
@@ -43,6 +54,9 @@ Each one is a real mistake made in this project.
   Check the port (`Get-NetTCPConnection -LocalPort 4000`) and stop the orphan before starting again.
 - `touch`-ing a file does not always trigger the watcher: restart it instead.
 - Test accounts use `@t.com` emails and must be deleted after every test run (with their uploaded files).
+- Hosting runs Linux + whatever npm its Node version bundles. Render's Node 22 = npm 10, which rejected a lock
+  file made by npm 11 ("Missing: typescript from lock file"). Use Node 24 (npm 11) and test the build command
+  with `npx npm@<host's npm> ci --dry-run` before pushing.
 - Write helper scripts to files instead of long bash heredocs with quotes/apostrophes (they broke twice).
 - In Python edit scripts, use raw strings (r"...") for code with backslashes (regexes): `\s`, `\p{...}` broke an edit.
 
