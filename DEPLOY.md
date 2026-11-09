@@ -3,8 +3,8 @@
 | Part | Host | Cost |
 |---|---|---|
 | MySQL database | **Aiven** (free plan) | $0 |
-| Backend (this repo) | **Render** (free web service, from `render.yaml`) | $0 (sleeps after 15 min idle; the first visit wakes it in ~1 min) |
-| Frontend (`messenger-ai` repo) | **Vercel** (Hobby) | $0 |
+| Backend (`backend/`) | **Render** (free web service, from `render.yaml`) | $0 (sleeps after 15 min idle; the first visit wakes it in ~1 min) |
+| Frontend (`frontend/`) | **Vercel** (Hobby) | $0 |
 
 Uploaded photos/voice notes are stored **in the database** online (`FILE_STORAGE=database`), because free hosts wipe
 their disk on restart. Everything stays encrypted.
@@ -21,7 +21,7 @@ their disk on restart. Everything stays encrypted.
 
 ## 2. Backend: Render
 
-1. Sign up at **render.com** with GitHub → **New → Blueprint** → pick the `messenger-ai-backend` repo.
+1. Sign up at **render.com** with GitHub → **New → Blueprint** → pick the `Messenger-Ai` repo.
 2. Render reads `render.yaml`. Fill in:
    - `DATABASE_URL` = the URI from step 1.3
    - `FRONTEND_URL` = your Vercel address (step 3). Put `https://example.com` for now, then fix it after step 3.
@@ -32,8 +32,8 @@ their disk on restart. Everything stays encrypted.
 
 ## 3. Frontend: Vercel
 
-1. Sign up at **vercel.com** with GitHub → **Add New → Project** → import the `messenger-ai` repo.
-2. **Production branch**: `release/prod` (Settings → Git).
+1. Sign up at **vercel.com** with GitHub → **Add New → Project** → import the `Messenger-Ai` repo.
+2. **Root Directory**: `frontend` (Vercel asks while importing). Production branch: `main`.
 3. **Environment variable**: `NEXT_PUBLIC_API_URL` = the Render address from step 2.3 (no slash at the end).
 4. Deploy, then copy your site address, e.g. `https://messenger-ai.vercel.app`.
 
@@ -46,4 +46,4 @@ That's the only website allowed to talk to the API (CORS + WebSockets).
 
 - **Emails** (email/password change links) are printed in Render's **Logs** until you add `SMTP_*` settings.
 - **Sparky** runs in free simple mode. Adding `ANTHROPIC_API_KEY` in Render switches on the real AI.
-- **Updating**: merge into `release/prod` and push. Render and Vercel redeploy by themselves.
+- **Updating**: push to `main`. Render and Vercel redeploy by themselves.

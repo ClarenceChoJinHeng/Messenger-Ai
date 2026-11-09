@@ -83,7 +83,7 @@ npm run start:dev             # http://localhost:4000
 
 ## Deploying
 
-Free hosting with Aiven (MySQL) + Render (this API, via `render.yaml`) + Vercel (frontend): see **[DEPLOY.md](DEPLOY.md)**.
+Free hosting with Aiven (MySQL) + Render (this API) + Vercel (frontend): see **[DEPLOY.md](../DEPLOY.md)** at the top of the repo.
 
 ## Tests
 
