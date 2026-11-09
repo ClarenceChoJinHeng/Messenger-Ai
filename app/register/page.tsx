@@ -1,5 +1,7 @@
 "use client";
+import { useMutation } from "@tanstack/react-query";
 import { useState, type SubmitEvent } from "react";
+import { ToastContainer, toast } from "react-toastify";
 
 export default function Register() {
   // Put your logic here, remember this is a function :D
@@ -10,6 +12,34 @@ export default function Register() {
   const [errorEmail, setEmailError] = useState<string | null>(null);
   const [errorPassword, setPasswordError] = useState<string | null>(null);
 
+  const registerMutation = useMutation({
+    mutationFn: async (user: { username: string; email: string; password: string }) => {
+      const res = await fetch("http://localhost:4000/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(user),
+      });
+      const data = await res.json();
+      if (!res.ok) throw data; // a 400 should count as an error
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Sign up successful!", { theme: "colored" });
+      setUsername("");
+      setEmail("");
+      setPassword("");
+    },
+    onError: (error) => {
+      if (error instanceof TypeError) {
+        toast.error("Cannot reach the server, please try again later.");
+      } else if (Array.isArray(error.message)) {
+        error.message.forEach((msg: string) => toast.error(msg));
+      } else {
+        toast.error(error.message);
+      }
+    },
+  });
+
   function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -17,6 +47,7 @@ export default function Register() {
     setUsernameError(null);
     setEmailError(null);
     setPasswordError(null);
+
     if (username.trim() === "") {
       setUsernameError("Username cannot be empty!");
       return;
@@ -55,12 +86,13 @@ export default function Register() {
       password,
     };
 
-    console.log("New User Value", newUser.username, newUser.email, newUser.password);
+    registerMutation.mutate(newUser);
   }
 
   return (
     <div className="flex h-screen items-center justify-center">
       <div className="mx-3 w-full max-w-[400px] rounded-[10px] p-5 text-black shadow-[0px_15px_35px_rgba(0,0,0,0.26)]">
+        <ToastContainer theme="colored" />
         <h1 className="mb-3 text-[30px] font-[600]">Sign Up</h1>
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <div className="flex flex-col">
@@ -114,9 +146,10 @@ export default function Register() {
           <div className="flex flex-col">
             <button
               type="submit"
+              disabled={registerMutation.isPending}
               className="rounded-[8px] bg-black px-3 py-2 font-[600] text-white hover:cursor-pointer"
             >
-              Submit
+              {registerMutation.isPending ? "Signing up..." : "Submit"}
             </button>
           </div>
         </form>
