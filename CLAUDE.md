@@ -9,8 +9,19 @@ Project notes, rules and learning progress live in Obsidian:
   Clarence asked Claude to build (`task/003-portfolio-mvp` and later feature tasks). Learning happens on `task/001-project-setup`.
 - Every task: `specs/NNN-name.md` → branch `task/NNN-name` from `release/prod` →
   `release/staging` → `release/prod`. Commit only when Clarence asks, and scan for secrets first.
+- **No Claude attribution in commits**: never add `Co-Authored-By: Claude` (Clarence removed it from all history).
 - Never read `.env*` or other secrets.
 - Runs on port 3000 (`npm run dev`). The backend repo is `../backend` (port 4000).
+
+## Publishing (GitHub + hosting)
+
+- Public repo: https://github.com/ClarenceChoJinHeng/Messenger-Ai (account ClarenceChoJinHeng; the old
+  ChoJinHeng/messenger-ai remote is NOT writable from this PC). It's a monorepo: `frontend/` + `backend/`,
+  built in `E:/laragon/www/Projects/Personal/Messenger-Ai` with both histories (subtree merge).
+- Work still happens in these two repos. To publish `release/prod` (only when Clarence asks to push):
+  `cd ../../Messenger-Ai && git fetch ../messenger-ai-app/messenger-ai release/prod && git merge -X subtree=frontend FETCH_HEAD`
+  then the same with `../messenger-ai-app/backend` and `-X subtree=backend`, then `git push`.
+- Hosting: Aiven (MySQL) + Render (`render.yaml`, rootDir backend) + Vercel (root dir frontend). See DEPLOY.md there.
 
 ## Lessons learned — don't repeat these
 
