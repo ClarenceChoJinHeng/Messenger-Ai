@@ -11,7 +11,9 @@ services:
     # Install (including dev tools like the Nest CLI and Prisma), build the Prisma client, compile
     buildCommand: npm ci --include=dev && npx prisma generate && npm run build
     # Bring the database tables up to date, then start
-    startCommand: npx prisma migrate deploy && node dist/main
+    # The first deploy failed half-way on migration 20261109035647 (a lowercase table name, now fixed).
+    # 'resolve --rolled-back' clears that failed record once; on every later start it just does nothing.
+    startCommand: (npx prisma migrate resolve --rolled-back 20261109035647_add_profiles_and_messages || true) && npx prisma migrate deploy && node dist/main
     healthCheckPath: /
     envVars:
       - key: NODE_VERSION
